@@ -1,0 +1,17 @@
+{
+  "name": "@tsonic/express",
+  "version": "0.0.0-dev",
+  "private": false,
+  "description": "Native Tsonic source-of-truth port of Express",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/tests/runtime/*.test.js dist/tests/tsonic/*.test.js",
+    "selftest": "bash scripts/selftest.sh",
+    "check:branches": "bash scripts/check-branch-hygiene.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.9.3"
+  }
+}
