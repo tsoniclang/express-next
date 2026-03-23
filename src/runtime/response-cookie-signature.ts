@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 
 /**
  * Sign a cookie value with an HMAC-SHA256 signature.
@@ -48,15 +48,27 @@ export function unsign(
 function signature(value: string, secret: string): string {
   const hmac = createHmac("sha256", secret);
   hmac.update(value);
-  return hmac.digest("base64").replace(/=+$/, "");
+  return trimBase64Padding(hmac.digest("base64"));
 }
 
 function fixedTimeEquals(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, "utf-8");
-  const bufB = Buffer.from(b, "utf-8");
-  if (bufA.length !== bufB.length) {
+  if (a.length !== b.length) {
     return false;
   }
 
-  return timingSafeEqual(bufA, bufB);
+  let mismatch = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    mismatch |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+
+  return mismatch === 0;
+}
+
+function trimBase64Padding(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "=") {
+    end -= 1;
+  }
+
+  return value.slice(0, end);
 }

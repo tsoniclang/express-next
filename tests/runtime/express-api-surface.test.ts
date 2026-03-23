@@ -16,6 +16,14 @@ test("express module exposes expected top level members", () => {
   assert.equal(typeof express.create, "function");
   assert.equal(typeof express.application, "function");
   assert.equal(typeof express.app, "function");
+  assert.equal(typeof express.Router, "function");
+  assert.equal(typeof express.cookieParser, "function");
+  assert.equal(typeof express.cors, "function");
+  assert.equal(typeof express.json, "function");
+  assert.equal(typeof express.raw, "function");
+  assert.equal(typeof express.multipart, "function");
+  assert.equal(typeof express.text, "function");
+  assert.equal(typeof express.urlencoded, "function");
 });
 
 test("application exposes expected properties and methods", () => {
@@ -56,12 +64,18 @@ test("request exposes expected properties and methods", async () => {
     assert.ok("app" in req);
     assert.ok("baseUrl" in req);
     assert.ok("body" in req);
+    assert.ok("cookies" in req);
+    assert.ok("file" in req);
+    assert.ok("files" in req);
     assert.ok("method" in req);
     assert.ok("originalUrl" in req);
     assert.ok("params" in req);
     assert.ok("path" in req);
     assert.ok("query" in req);
+    assert.ok("res" in req);
     assert.ok("route" in req);
+    assert.ok("signed" in req);
+    assert.ok("signedCookies" in req);
 
     // Methods
     assert.equal(typeof req.get, "function");
@@ -101,6 +115,8 @@ test("response exposes expected properties and methods", async () => {
     // Methods
     assert.equal(typeof res.append, "function");
     assert.equal(typeof res.cookie, "function");
+    assert.equal(typeof res.clearCookie, "function");
+    assert.equal(typeof res.end, "function");
     assert.equal(typeof res.get, "function");
     assert.equal(typeof res.json, "function");
     assert.equal(typeof res.jsonp, "function");
@@ -109,6 +125,7 @@ test("response exposes expected properties and methods", async () => {
     assert.equal(typeof res.set, "function");
     assert.equal(typeof res.status, "function");
     assert.equal(typeof res.type, "function");
+    assert.equal(typeof res.vary, "function");
     assert.equal(typeof res.header, "function");
 
     res.send("ok");

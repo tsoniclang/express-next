@@ -1,4 +1,5 @@
 import type { Readable } from "node:stream";
+import { Buffer } from "node:buffer";
 
 /**
  * Represents a single file received via a multipart upload.
@@ -17,8 +18,8 @@ export interface TransportFile {
   readonly size: number;
   /** Return a readable stream for the file contents. */
   stream(): Readable;
-  /** Return the full file contents as a buffer. */
-  buffer(): Promise<Buffer>;
+  /** Return the full file contents as bytes. */
+  buffer(): Promise<Uint8Array>;
 }
 
 export class UploadedFile {
@@ -40,14 +41,13 @@ export class UploadedFile {
 
   /** Return the file contents as a `Uint8Array`. */
   async bytes(): Promise<Uint8Array> {
-    const buf = await this.#transport.buffer();
-    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+    return await this.#transport.buffer();
   }
 
   /** Return the file contents decoded as UTF-8 text. */
   async text(): Promise<string> {
-    const buf = await this.#transport.buffer();
-    return buf.toString("utf-8");
+    const bytes = await this.#transport.buffer();
+    return Buffer.from(bytes).toString("utf-8");
   }
 
   /**
@@ -56,10 +56,8 @@ export class UploadedFile {
    * TODO: wire to the host fs layer once the transport adapter lands.
    */
   async save(path: string): Promise<void> {
-    // TODO: implement via node:fs/promises.writeFile once the transport adapter is available
-    const fs = await import("node:fs/promises");
-    const buf = await this.#transport.buffer();
-    await fs.writeFile(path, buf);
+    void path;
+    throw new Error("UploadedFile.save is not yet supported.");
   }
 
   /** @internal – expose the underlying readable for piping. */
