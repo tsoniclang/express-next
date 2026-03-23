@@ -1,5 +1,7 @@
 import { Emitter } from "../internal/emitter.js";
 import { Router } from "./router.js";
+import { AppServer } from "./host/app-server.js";
+import { listenOnPath, listenOnPort } from "./host/node-server.js";
 import type {
   ParamHandler,
   PathSpec,
@@ -54,6 +56,59 @@ export class Application extends Router {
     }
 
     return super.get(nameOrPath as PathSpec, ...handlers);
+  }
+
+  listen(path: string, callback?: () => void): AppServer;
+  listen(port: number, callback?: () => void): AppServer;
+  listen(port: number, host: string, callback?: () => void): AppServer;
+  listen(
+    port: number,
+    host: string,
+    backlog: number,
+    callback?: () => void
+  ): AppServer;
+  listen(
+    portOrPath: number | string,
+    hostOrCallback?: string | (() => void),
+    backlogOrCallback?: number | (() => void),
+    maybeCallback?: () => void
+  ): AppServer {
+    if (typeof portOrPath === "string") {
+      const callback =
+        typeof hostOrCallback === "function" ? hostOrCallback : maybeCallback;
+      return listenOnPath(this, portOrPath, callback);
+    }
+
+    if (typeof hostOrCallback === "string") {
+      if (typeof backlogOrCallback === "number") {
+        return listenOnPort(
+          this,
+          portOrPath,
+          hostOrCallback,
+          backlogOrCallback,
+          maybeCallback
+        );
+      }
+
+      return listenOnPort(
+        this,
+        portOrPath,
+        hostOrCallback,
+        typeof backlogOrCallback === "function"
+          ? backlogOrCallback
+          : maybeCallback
+      );
+    }
+
+    if (typeof hostOrCallback === "function") {
+      return listenOnPort(this, portOrPath, hostOrCallback);
+    }
+
+    if (typeof backlogOrCallback === "function") {
+      return listenOnPort(this, portOrPath, backlogOrCallback);
+    }
+
+    return listenOnPort(this, portOrPath, maybeCallback);
   }
 
   on(eventName: string, listener: (...args: unknown[]) => void): this {

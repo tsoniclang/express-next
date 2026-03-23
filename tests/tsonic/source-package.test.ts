@@ -7,6 +7,11 @@ test("native express sources compile and run through tsonic", () => {
   withTempFixture((dir) => {
     runTsonic(dir, ["init", "--surface", "@tsonic/js"]);
     run(dir, "npm", ["install", `file:${join(repoRoot, "..", "js", "versions", "10")}`]);
+    run(
+      dir,
+      "npm",
+      ["install", `file:${join(repoRoot, "..", "nodejs-next", "versions", "10")}`]
+    );
     const projectName = dir.split("/").filter(Boolean).at(-1);
     if (!projectName) {
       throw new Error("missing project name");
