@@ -1,4 +1,4 @@
-import type { UploadedFile } from "./uploaded-file.js";
+import type { UploadedFile } from "./request-uploaded-file.js";
 
 /**
  * Case-insensitive store of uploaded files, keyed by form field name.

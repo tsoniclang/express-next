@@ -1,15 +1,20 @@
 import type { Application } from "./application.js";
+import { sign } from "./response-cookie-signature.js";
 import type { Request } from "./request.js";
 import type { TemplateCallback, TransportResponse } from "./types.js";
 
 export interface CookieOptions {
+  encode?: (value: string) => string;
+  expires?: Date;
   path?: string;
   domain?: string;
   httpOnly?: boolean;
   secure?: boolean;
+  partitioned?: boolean;
   sameSite?: string | boolean;
   priority?: string;
   maxAge?: number;
+  signed?: boolean;
 }
 
 export class Response {
@@ -24,6 +29,9 @@ export class Response {
   constructor(transport: TransportResponse, request?: Request) {
     this.#transport = transport;
     this.req = request;
+    if (request) {
+      request.res = this;
+    }
     this.#statusCode = transport.statusCode;
   }
 
@@ -61,8 +69,23 @@ export class Response {
   }
 
   cookie(name: string, value: unknown, options?: CookieOptions): this {
-    const payload = typeof value === "string" ? value : JSON.stringify(value);
-    const segments = [`${name}=${payload}`, `Path=${options?.path ?? "/"}`];
+    let payload = typeof value === "string" ? value : JSON.stringify(value);
+    if (options?.signed) {
+      const secret =
+        typeof this.app?.get("cookie secret") === "string"
+          ? String(this.app?.get("cookie secret"))
+          : undefined;
+      if (!secret) {
+        throw new Error(
+          "Cannot set signed cookie without a secret. Install cookieParser() first."
+        );
+      }
+
+      payload = sign(payload, secret);
+    }
+
+    const encoded = options?.encode ? options.encode(payload) : payload;
+    const segments = [`${name}=${encoded}`, `Path=${options?.path ?? "/"}`];
 
     if (options?.domain) {
       segments.push(`Domain=${options.domain}`);
@@ -76,8 +99,16 @@ export class Response {
       segments.push(`Max-Age=${String(maxAgeSeconds / 1000)}`);
     }
 
+    if (options?.expires) {
+      segments.push(`Expires=${options.expires.toUTCString()}`);
+    }
+
     if (options?.httpOnly) {
       segments.push("HttpOnly");
+    }
+
+    if (options?.partitioned) {
+      segments.push("Partitioned");
     }
 
     if (options?.secure) {
@@ -95,6 +126,14 @@ export class Response {
     }
 
     return this.append("Set-Cookie", segments.join("; "));
+  }
+
+  clearCookie(name: string, options?: CookieOptions): this {
+    return this.cookie(name, "", {
+      ...options,
+      expires: new Date(0),
+      maxAge: 0
+    });
   }
 
   get(field: string): string | undefined {
@@ -147,6 +186,10 @@ export class Response {
     return this;
   }
 
+  end(body?: unknown): this {
+    return this.send(body);
+  }
+
   send(body?: unknown): this {
     this.#transport.statusCode = this.#statusCode;
 
@@ -185,6 +228,22 @@ export class Response {
 
   type(typeName: string): this {
     return this.set("Content-Type", typeName);
+  }
+
+  vary(field: string): this {
+    const current = this.get("vary");
+    if (!current) {
+      return this.set("Vary", field);
+    }
+
+    const entries = current.split(",");
+    for (let index = 0; index < entries.length; index += 1) {
+      if (entries[index]!.trim().toLowerCase() === field.toLowerCase()) {
+        return this;
+      }
+    }
+
+    return this.set("Vary", `${current}, ${field}`);
   }
 }
 
