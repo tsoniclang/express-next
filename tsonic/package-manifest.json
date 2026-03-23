@@ -6,7 +6,8 @@
   ],
   "source": {
     "exports": {
-      ".": "./src/index.ts"
+      ".": "./src/index.ts",
+      "./index.js": "./src/index.ts"
     }
   }
 }
