@@ -1,3 +1,6 @@
+type CloseCallback = (error?: Error) => void;
+type CloseAction = (callback?: CloseCallback) => void;
+
 /**
  * Represents a running server instance returned by `app.listen()`.
  *
@@ -5,10 +8,10 @@
  * `listening`, and `close()`.
  */
 export class AppServer {
-  readonly #closeAction: (() => void) | undefined;
-  readonly #port: number | undefined;
-  readonly host: string | undefined;
-  readonly path: string | undefined;
+  readonly #closeAction: CloseAction | undefined;
+  #port: number | undefined;
+  host: string | undefined;
+  path: string | undefined;
 
   #listening: boolean;
 
@@ -17,7 +20,7 @@ export class AppServer {
     port: number | undefined,
     host: string | undefined,
     path: string | undefined,
-    closeAction?: () => void
+    closeAction?: CloseAction
   ) {
     this.#port = port;
     this.host = host;
@@ -34,6 +37,17 @@ export class AppServer {
     return this.#listening;
   }
 
+  /** @internal */
+  updateBinding(
+    port: number | undefined,
+    host: string | undefined,
+    path: string | undefined
+  ): void {
+    this.#port = port;
+    this.host = host;
+    this.path = path;
+  }
+
   close(callback?: (error?: Error) => void): void {
     if (!this.#listening) {
       if (callback) {
@@ -44,8 +58,22 @@ export class AppServer {
 
     try {
       if (this.#closeAction) {
-        this.#closeAction();
+        this.#closeAction((error) => {
+          if (error) {
+            if (callback) {
+              callback(error);
+            }
+            return;
+          }
+
+          this.#listening = false;
+          if (callback) {
+            callback(undefined);
+          }
+        });
+        return;
       }
+
       this.#listening = false;
       if (callback) {
         callback(undefined);
