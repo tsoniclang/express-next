@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createServer } from "node:http";
 import type {
   IncomingMessage,
@@ -491,7 +492,11 @@ function decodeQueryComponent(value: string): string {
 }
 
 function decodePercentEscapes(value: string): string {
-  let result = "";
+  if (!value.includes("%")) {
+    return value;
+  }
+
+  const bytes: number[] = [];
   let index = 0;
 
   while (index < value.length) {
@@ -500,17 +505,17 @@ function decodePercentEscapes(value: string): string {
       const high = parseHexDigit(value[index + 1]!);
       const low = parseHexDigit(value[index + 2]!);
       if (high >= 0 && low >= 0) {
-        result += String.fromCharCode((high << 4) | low);
+        bytes.push((high << 4) | low);
         index += 3;
         continue;
       }
     }
 
-    result += current;
+    appendBufferBytes(bytes, Buffer.from(current, "utf-8"));
     index += 1;
   }
 
-  return result;
+  return Buffer.from(bytes).toString("utf-8");
 }
 
 function parseHexDigit(value: string): number {
@@ -530,18 +535,24 @@ function parseHexDigit(value: string): number {
   return -1;
 }
 
-function bytesToText(bytes: Uint8Array): string {
-  let result = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    result += String.fromCharCode(bytes[index]!);
+function appendBufferBytes(target: number[], buffer: Buffer): void {
+  for (let byteIndex = 0; byteIndex < buffer.length; byteIndex += 1) {
+    target.push(buffer.readUInt8(byteIndex));
   }
-  return result;
+}
+
+function toUint8Array(buffer: Buffer): Uint8Array {
+  const bytes = new Uint8Array(buffer.length);
+  for (let index = 0; index < buffer.length; index += 1) {
+    bytes[index] = buffer.readUInt8(index);
+  }
+  return bytes;
+}
+
+function bytesToText(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString("utf-8");
 }
 
 function textToBytes(value: string): Uint8Array {
-  const bytes = new Uint8Array(value.length);
-  for (let index = 0; index < value.length; index += 1) {
-    bytes[index] = value.charCodeAt(index) & 0xff;
-  }
-  return bytes;
+  return toUint8Array(Buffer.from(value, "utf-8"));
 }

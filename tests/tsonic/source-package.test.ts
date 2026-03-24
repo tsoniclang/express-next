@@ -6,7 +6,7 @@ import { copyNativeSources, repoRoot, run, runTsonic, withTempFixture, writeFixt
 test("native express sources compile and run through tsonic", () => {
   withTempFixture((dir) => {
     runTsonic(dir, ["init", "--surface", "@tsonic/js"]);
-    run(dir, "npm", ["install", `file:${join(repoRoot, "..", "js", "versions", "10")}`]);
+    run(dir, "npm", ["install", `file:${join(repoRoot, "..", "js-next", "versions", "10")}`]);
     run(
       dir,
       "npm",
