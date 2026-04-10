@@ -2,7 +2,7 @@ import type { Request } from "./request.js";
 import type { Response } from "./response.js";
 
 // ---------------------------------------------------------------------------
-// Delegate types (ported from express-clr delegates.cs)
+// Delegate types
 // ---------------------------------------------------------------------------
 
 export type VerifyBodyHandler = (
